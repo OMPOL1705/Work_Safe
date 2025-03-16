@@ -55,7 +55,9 @@ const getJobs = async (req, res) => {
 // @access  Public
 const getJobById = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id).populate('employer', 'username email');
+    const job = await Job.findById(req.params.id)
+      .populate('employer', 'username email')
+      .populate('freelancer', 'username email walletAddress');
 
     if (job) {
       res.json(job);
@@ -84,20 +86,34 @@ const updateJob = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this job' });
     }
 
-    const { title, description, skills, budget, deadline, status, contractAddress } = req.body;
+    const { title, description, skills, budget, deadline, status, freelancer } = req.body;
 
-    job.title = title || job.title;
-    job.description = description || job.description;
-    job.skills = skills || job.skills;
-    job.budget = budget || job.budget;
-    job.deadline = deadline || job.deadline;
-    job.status = status || job.status;
-    job.contractAddress = contractAddress || job.contractAddress;
+    // Add these debug logs
+    console.log('Updating job with data:', req.body);
+    console.log('Current freelancer value:', job.freelancer);
+    console.log('New freelancer value:', freelancer);
+
+    // Update fields if provided
+    if (title) job.title = title;
+    if (description) job.description = description;
+    if (skills) job.skills = skills;
+    if (budget) job.budget = budget;
+    if (deadline) job.deadline = deadline;
+    if (status) job.status = status;
+    if (freelancer) job.freelancer = freelancer;
 
     const updatedJob = await job.save();
+    
+    // Populate the employer and freelancer fields
+    await updatedJob.populate('employer', 'username email');
+    if (updatedJob.freelancer) {
+      await updatedJob.populate('freelancer', 'username email');
+    }
+    
+    console.log('Job updated successfully:', updatedJob);
     res.json(updatedJob);
   } catch (error) {
-    console.error(error);
+    console.error('Error updating job:', error);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };

@@ -109,9 +109,12 @@ const updateApplicationStatus = async (req, res) => {
     application.status = status;
     const updatedApplication = await application.save();
 
-    // If application is accepted, update job status
+    // If application is accepted, update job with freelancer info
     if (status === 'accepted') {
-      await Job.findByIdAndUpdate(application.job._id, { status: 'in-progress' });
+      await Job.findByIdAndUpdate(application.job._id, { 
+        status: 'in-progress',
+        freelancer: application.freelancer
+      });
     }
 
     res.json(updatedApplication);

@@ -26,18 +26,21 @@ const JobSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  freelancer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   status: {
     type: String,
     enum: ['open', 'in-progress', 'completed', 'cancelled'],
     default: 'open'
   },
-  contractAddress: {
-    type: String,
-    default: ''
-  },
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  completedAt: {
+    type: Date
   }
 });
 
