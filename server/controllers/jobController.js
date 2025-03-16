@@ -118,7 +118,9 @@ const deleteJob = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this job' });
     }
 
-    await job.remove();
+    // Use findByIdAndDelete instead of remove()
+    await Job.findByIdAndDelete(req.params.id);
+    
     res.json({ message: 'Job removed' });
   } catch (error) {
     console.error(error);
