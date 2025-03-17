@@ -41,7 +41,21 @@ const JobSchema = new mongoose.Schema({
   },
   completedAt: {
     type: Date
+  },
+  domain: {
+    type: String,
+    enum: [
+      'web-development',
+      'mobile-development',
+      'design',
+      'writing',
+      'marketing',
+      'data'
+    ],
+    required: true
   }
+}, {
+  timestamps: true
 });
 
 // Add text index for search functionality

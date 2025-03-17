@@ -9,21 +9,32 @@ const createJob = async (req, res) => {
       return res.status(403).json({ message: 'Only employers can create jobs' });
     }
 
-    const { title, description, skills, budget, deadline } = req.body;
+    const { title, description, skills, budget, deadline, domain } = req.body;
 
-    const job = await Job.create({
+    // Validate domain
+    if (!domain) {
+      return res.status(400).json({ message: 'Job category is required' });
+    }
+
+    const job = new Job({
       title,
       description,
       skills,
       budget,
       deadline,
+      domain,
       employer: req.user._id
     });
 
-    res.status(201).json(job);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    console.log('Creating job with data:', job); // Debug log
+
+    const savedJob = await job.save();
+    const populatedJob = await savedJob.populate('employer', 'username email');
+
+    res.status(201).json(populatedJob);
+  } catch (err) {
+    console.error('Error in createJob:', err);
+    res.status(500).json({ message: err.message || 'Error creating job' });
   }
 };
 
@@ -32,21 +43,41 @@ const createJob = async (req, res) => {
 // @access  Public
 const getJobs = async (req, res) => {
   try {
-    const keyword = req.query.keyword
-      ? {
-          $or: [
-            { title: { $regex: req.query.keyword, $options: 'i' } },
-            { description: { $regex: req.query.keyword, $options: 'i' } },
-            { skills: { $regex: req.query.keyword, $options: 'i' } }
-          ]
-        }
-      : {};
-
-    const jobs = await Job.find({ ...keyword }).populate('employer', 'username email');
-    res.json(jobs);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server Error', error: error.message });
+    const { status, limit, page = 1, domain } = req.query;
+    
+    const query = {};
+    
+    // Make status filter optional
+    if (status) {
+      query.status = status;
+    }
+    
+    if (domain && domain !== 'all') {
+      query.domain = domain;
+    }
+    
+    const jobs = await Job.find(query)
+      .populate('employer', 'username email')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit) || 10);
+    
+    const total = await Job.countDocuments(query);
+    
+    res.json({
+      jobs,
+      pagination: {
+        total,
+        pages: Math.ceil(total / (parseInt(limit) || 10)),
+        page: parseInt(page),
+        pageSize: parseInt(limit) || 10
+      }
+    });
+  } catch (err) {
+    console.error('Error in getJobs:', err);
+    res.status(500).json({ 
+      jobs: [],
+      message: 'Server error' 
+    });
   }
 };
 
